@@ -7,9 +7,8 @@
             <field name="model">res.config.settings</field>
             <field name="inherit_id" ref="base.res_config_settings_view_form"/>
             <field name="arch" type="xml">
-                <!-- CAMBIO AQUÍ: Apuntar a un bloque de configuración existente para insertar después -->
-                <!-- Intentamos insertar después del bloque de "General Settings" (data-key='base_settings') -->
-                <xpath expr="//div[@data-key='base_settings']" position="after">
+                <!-- CAMBIO AQUÍ: Apuntar al div con la clase 'o_form_sheet_bg' para una inserción robusta -->
+                <xpath expr="//div[hasclass('o_form_sheet_bg')]" position="inside">
                     <div class="app_settings_block" data-string="Límite de Usuarios" string="Límite de Usuarios" data-key="user_limit">
                         <h2>Configuración de Usuarios</h2>
                         <div class="row mt16 o_settings_container">
