@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 
-import logging # Añadir esta línea
+import logging
 from odoo import fields, models, api, _
 from odoo.exceptions import UserError
 import lxml.etree as ET
 
-_logger = logging.getLogger(__name__) # Añadir esta línea
+_logger = logging.getLogger(__name__)
 
 class ResConfigSettings(models.TransientModel):
+    # ¡CRUCIAL! Asegura que Odoo encadene correctamente la herencia para este TransientModel
+    _name = 'res.config.settings'
     _inherit = 'res.config.settings'
 
     # Campo para definir el límite de usuarios activos
@@ -15,39 +17,48 @@ class ResConfigSettings(models.TransientModel):
         string="Límite de Usuarios Activos",
         config_parameter='user_limit.max_active_users',
         help="Establece el número máximo de usuarios activos permitidos en esta instancia de Odoo.",
-        # Este campo ya NO debería tener el atributo groups aquí
+        # Este campo NO debe tener el atributo groups aquí, ya que la visibilidad se controla en fields_view_get
     )
 
     @api.model
     def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
+        """
+        Sobrescribe fields_view_get para controlar la visibilidad del bloque de configuración
+        del límite de usuarios basado en la pertenencia al grupo de superadministrador.
+        """
         _logger.info("Entrando a fields_view_get para res.config.settings")
+
+        # Llama al método super para obtener la definición de la vista original
         res = super().fields_view_get(view_id=view_id, view_type=view_type, toolbar=toolbar, submenu=submenu)
         _logger.info(f"Longitud inicial del XML de la vista: {len(res['arch'])}")
 
         if view_type == 'form':
-            # Verificar si el usuario actual tiene el grupo de superadministrador
+            # Verifica si el usuario actual pertenece al grupo 'Administrador de Límite de Usuarios'
             has_super_admin_group = self.env.user.has_group('user_limit.group_user_limit_super_admin')
-            _logger.info(f"Usuario tiene grupo super administrador: {has_super_admin_group}")
+            _logger.info(f"Usuario tiene grupo super administrador ('user_limit.group_user_limit_super_admin'): {has_super_admin_group}")
 
             if not has_super_admin_group:
-                _logger.info("El usuario NO tiene el grupo de super administrador. Intentando eliminar el bloque user_limit.")
+                _logger.info("El usuario NO tiene el grupo de super administrador. Intentando eliminar el bloque 'user_limit'.")
+                
+                # Convierte el XML de la vista a un objeto lxml para su manipulación
                 arch = ET.fromstring(res['arch'])
 
-                # Buscar y eliminar el app_settings_block completo por su data-key
-                # Usamos xpath aquí porque findall puede ser menos robusto para la eliminación
+                # Busca el div completo con data-key='user_limit' (nuestro bloque de configuración)
+                # Usamos xpath para una búsqueda más robusta
                 app_blocks_to_remove = arch.xpath("//div[@data-key='user_limit']")
                 
                 if app_blocks_to_remove:
                     for app_block in app_blocks_to_remove:
-                        parent = app_block.getparent()
+                        parent = app_block.getparent() # Obtiene el padre del bloque
                         if parent is not None:
-                            parent.remove(app_block)
-                            _logger.info("Bloque 'app_settings_block' con data-key='user_limit' eliminado del XML.")
+                            parent.remove(app_block) # Elimina el bloque del XML
+                            _logger.info("Bloque 'app_settings_block' con data-key='user_limit' ELIMINADO del XML.")
                         else:
                             _logger.warning("El bloque 'app_settings_block' no tiene padre, no se puede eliminar.")
                 else:
                     _logger.warning("Bloque 'app_settings_block' con data-key='user_limit' NO ENCONTRADO en el XML de la vista.")
 
+                # Convierte el objeto lxml modificado de nuevo a una cadena XML
                 res['arch'] = ET.tostring(arch, encoding='unicode')
                 _logger.info(f"Longitud final del XML de la vista después de la modificación: {len(res['arch'])}")
             else:
@@ -55,3 +66,4 @@ class ResConfigSettings(models.TransientModel):
 
         _logger.info("Saliendo de fields_view_get.")
         return res
+
