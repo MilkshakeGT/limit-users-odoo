@@ -3,8 +3,9 @@
     <data noupdate="1">
         <record id="group_user_limit_super_admin" model="res.groups">
             <field name="name">Administrador de Límite de Usuarios</field>
-            <field name="category_id" ref="base.module_category_configuration"/>
-            <field name="implied_ids" eval="[(4, ref('base.group_system'))]"/> <field name="comment">Acceso para modificar el límite de usuarios de la instancia.</field>
+            <field name="category_id" ref="base.module_category_administration"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_system'))]"/>
+            <field name="comment">Acceso para modificar el límite de usuarios de la instancia.</field>
         </record>
     </data>
 </odoo>
