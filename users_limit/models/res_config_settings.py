@@ -17,6 +17,13 @@ class ResConfigSettings(models.TransientModel):
     _name = 'res.config.settings'
     _inherit = 'res.config.settings'
 
+    # --- LÍNEA DE DEPURACIÓN DE CLASE CRÍTICA (CAUSARÁ UN ERROR DE EJECUCIÓN) ---
+    # Esta línea causará un ZeroDivisionError inmediatamente cuando la clase sea definida.
+    # Si Odoo se niega a iniciar o el módulo a actualizar, significa que la clase está siendo procesada.
+    # DEBES ELIMINAR ESTA LÍNEA DESPUÉS DE LA PRUEBA.
+    _debug_crash_test = 1 / 0 
+    # --- FIN LÍNEA DE DEPURACIÓN DE CLASE ---
+
     # Campo para definir el límite de usuarios activos
     user_limit = fields.Integer(
         string="Límite de Usuarios Activos",
