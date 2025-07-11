@@ -14,7 +14,7 @@
     'version': '17.0.1.0.0',
     'depends': ['base', 'web'],
     'data': [
-        'security/user_limit_security.xml', # ¡NUEVO!
+        'security/user_limit_security.xml', # Este debe ir primero
         'views/res_config_settings_views.xml',
     ],
     'installable': True,
