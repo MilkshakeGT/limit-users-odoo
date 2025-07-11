@@ -38,6 +38,20 @@ class ResConfigSettings(models.TransientModel):
         help="Establece el número máximo de usuarios activos permitidos en esta instancia de Odoo.",
     )
 
+    # --- NUEVO CAMPO TEMPORAL PARA DEPURACIÓN DE PERMISOS ---
+    # Este campo mostrará si el usuario actual tiene el grupo de superadministrador.
+    has_user_limit_admin_group = fields.Boolean(
+        string="Tiene Grupo Admin Límite",
+        compute='_compute_has_user_limit_admin_group',
+        default=False,
+    )
+
+    @api.depends('company_id') # Dependencia mínima para que se compute
+    def _compute_has_user_limit_admin_group(self):
+        for rec in self:
+            rec.has_user_limit_admin_group = self.env.user.has_group('user_limit.group_user_limit_super_admin')
+    # --- FIN NUEVO CAMPO TEMPORAL ---
+
     @api.model
     def fields_view_get(self, view_id=None, view_type='form', toolbar=False, submenu=False):
         """
@@ -59,11 +73,9 @@ class ResConfigSettings(models.TransientModel):
             _logger.info(f"Usuario tiene grupo super administrador ('user_limit.group_user_limit_super_admin'): {has_super_admin_group}")
 
             if not has_super_admin_group:
-                # --- LÍNEA DE DEPURACIÓN CRÍTICA (dentro del IF) ---
-                # Si ves este error, significa que Odoo cree que el usuario NO tiene el grupo.
-                # ¡Esto es lo que esperamos para los usuarios sin permisos!
-                raise UserError("¡¡¡DEPURACIÓN: Odoo cree que el usuario NO tiene el grupo de super admin!!!")
-                # --- FIN LÍNEA DE DEPURACIÓN ---
+                # --- ELIMINAR LA LÍNEA raise UserError DE AQUI ---
+                # raise UserError("¡¡¡DEPURACIÓN: Odoo cree que el usuario NO tiene el grupo de super admin!!!")
+                # --- FIN ELIMINAR ---
 
                 log_to_file("El usuario NO tiene el grupo de super administrador. Intentando eliminar el bloque 'user_limit'.")
                 _logger.info("El usuario NO tiene el grupo de super administrador. Intentando eliminar el bloque 'user_limit'.")
@@ -78,7 +90,7 @@ class ResConfigSettings(models.TransientModel):
                     for app_block in app_blocks_to_remove:
                         parent = app_block.getparent() # Obtiene el padre del bloque
                         if parent is not None:
-                            parent.remove(app_block) # ¡CAMBIO CLAVE AQUÍ! Eliminar el bloque
+                            parent.remove(app_block) # Eliminar el bloque
                             log_to_file("Bloque 'app_settings_block' con data-key='user_limit' ELIMINADO del XML.")
                             _logger.info("Bloque 'app_settings_block' con data-key='user_limit' ELIMINADO del XML.")
                         else:
