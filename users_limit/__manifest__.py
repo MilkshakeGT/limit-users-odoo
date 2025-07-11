@@ -8,12 +8,13 @@
         Este módulo proporciona una funcionalidad para establecer un límite máximo de usuarios activos
         en Odoo Community. Cuando se alcanza el límite, se impide la creación o activación de nuevos usuarios.
     """,
-    'author': "Elder Velásquez", # ¡Cambia esto!
-    'website': "http://www.milkshakecloud.com", # ¡Cambia esto!
+    'author': "Tu Nombre/Compañía",
+    'website': "http://www.tudominio.com",
     'category': 'Administration',
     'version': '17.0.1.0.0',
-    'depends': ['base', 'web'], # 'web' es útil para las vistas de configuración
+    'depends': ['base', 'web'],
     'data': [
+        'security/user_limit_security.xml', # ¡NUEVO!
         'views/res_config_settings_views.xml',
     ],
     'installable': True,
