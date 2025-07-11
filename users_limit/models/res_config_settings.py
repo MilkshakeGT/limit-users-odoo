@@ -13,6 +13,12 @@ class ResConfigSettings(models.TransientModel):
     _name = 'res.config.settings'
     _inherit = 'res.config.settings'
 
+    # --- LÍNEA DE DEPURACIÓN DE CARGA DE ARCHIVO ---
+    # Si ves este mensaje en el log del servidor al iniciar/actualizar Odoo,
+    # significa que este archivo Python está siendo cargado.
+    print("DEBUG: Clase ResConfigSettings en user_limit/models/res_config_settings.py cargada.")
+    # --- FIN LÍNEA DE DEPURACIÓN ---
+
     # Campo para definir el límite de usuarios activos
     user_limit = fields.Integer(
         string="Límite de Usuarios Activos",
@@ -27,7 +33,7 @@ class ResConfigSettings(models.TransientModel):
         Sobrescribe fields_view_get para controlar la visibilidad del bloque de configuración
         del límite de usuarios basado en la pertenencia al grupo de superadministrador.
         """
-        # --- LÍNEA DE DEPURACIÓN CRÍTICA ---
+        # --- LÍNEA DE DEPURACIÓN CRÍTICA (dentro del método) ---
         # Si ves este error en Odoo o en el log, significa que el método SÍ se está llamando.
         # Una vez que confirmes que se llama, DEBES ELIMINAR esta línea para que el módulo funcione normalmente.
         raise UserError("¡¡¡DEPURACIÓN: fields_view_get se está ejecutando en res.config.settings!!!")
@@ -73,4 +79,3 @@ class ResConfigSettings(models.TransientModel):
 
         _logger.info("Saliendo de fields_view_get.")
         return res
-
