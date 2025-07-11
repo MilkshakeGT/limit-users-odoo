@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
 
+# --- LÍNEA DE DEPURACIÓN DE CARGA DE ARCHIVO EXTREMA ---
+# Si ves este mensaje en el log del servidor al iniciar Odoo o al actualizar el módulo,
+# significa que este archivo Python está siendo LEÍDO por Odoo.
+print("DEBUG EXTREMO: Archivo res_config_settings.py de user_limit cargado y procesado.")
+# --- FIN LÍNEA DE DEPURACIÓN EXTREMA ---
+
 import logging
 from odoo import fields, models, api, _
 from odoo.exceptions import UserError
@@ -8,23 +14,14 @@ import lxml.etree as ET
 _logger = logging.getLogger(__name__)
 
 class ResConfigSettings(models.TransientModel):
-    # ¡¡¡ESTA LÍNEA ES FUNDAMENTAL Y FALTABA!!!
-    # Asegura que Odoo encadene correctamente la herencia para este TransientModel.
     _name = 'res.config.settings'
     _inherit = 'res.config.settings'
-
-    # --- LÍNEA DE DEPURACIÓN DE CARGA DE ARCHIVO ---
-    # Si ves este mensaje en el log del servidor al iniciar/actualizar Odoo,
-    # significa que este archivo Python está siendo cargado.
-    print("DEBUG: Clase ResConfigSettings en user_limit/models/res_config_settings.py cargada.")
-    # --- FIN LÍNEA DE DEPURACIÓN ---
 
     # Campo para definir el límite de usuarios activos
     user_limit = fields.Integer(
         string="Límite de Usuarios Activos",
         config_parameter='user_limit.max_active_users',
         help="Establece el número máximo de usuarios activos permitidos en esta instancia de Odoo.",
-        # Este campo NO debe tener el atributo groups aquí, ya que la visibilidad se controla en fields_view_get
     )
 
     @api.model
@@ -62,16 +59,15 @@ class ResConfigSettings(models.TransientModel):
                 
                 if app_blocks_to_remove:
                     for app_block in app_blocks_to_remove:
-                        parent = app_block.getparent() # Obtiene el padre del bloque
+                        parent = app_block.getparent()
                         if parent is not None:
-                            parent.remove(app_block) # Elimina el bloque del XML
+                            parent.remove(app_block)
                             _logger.info("Bloque 'app_settings_block' con data-key='user_limit' ELIMINADO del XML.")
                         else:
                             _logger.warning("El bloque 'app_settings_block' no tiene padre, no se puede eliminar.")
                 else:
                     _logger.warning("Bloque 'app_settings_block' con data-key='user_limit' NO ENCONTRADO en el XML de la vista.")
 
-                # Convierte el objeto lxml modificado de nuevo a una cadena XML
                 res['arch'] = ET.tostring(arch, encoding='unicode')
                 _logger.info(f"Longitud final del XML de la vista después de la modificación: {len(res['arch'])}")
             else:
