@@ -8,7 +8,8 @@ import lxml.etree as ET
 _logger = logging.getLogger(__name__)
 
 class ResConfigSettings(models.TransientModel):
-    # ¡CRUCIAL! Asegura que Odoo encadene correctamente la herencia para este TransientModel
+    # ¡¡¡ESTA LÍNEA ES FUNDAMENTAL Y FALTABA!!!
+    # Asegura que Odoo encadene correctamente la herencia para este TransientModel.
     _name = 'res.config.settings'
     _inherit = 'res.config.settings'
 
@@ -26,6 +27,12 @@ class ResConfigSettings(models.TransientModel):
         Sobrescribe fields_view_get para controlar la visibilidad del bloque de configuración
         del límite de usuarios basado en la pertenencia al grupo de superadministrador.
         """
+        # --- LÍNEA DE DEPURACIÓN CRÍTICA ---
+        # Si ves este error en Odoo o en el log, significa que el método SÍ se está llamando.
+        # Una vez que confirmes que se llama, DEBES ELIMINAR esta línea para que el módulo funcione normalmente.
+        raise UserError("¡¡¡DEPURACIÓN: fields_view_get se está ejecutando en res.config.settings!!!")
+        # --- FIN LÍNEA DE DEPURACIÓN ---
+
         _logger.info("Entrando a fields_view_get para res.config.settings")
 
         # Llama al método super para obtener la definición de la vista original
