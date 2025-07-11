@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <!-- Heredar la vista de configuración general de Odoo -->
         <record id="res_config_settings_view_form_inherit_user_limit" model="ir.ui.view">
             <field name="name">res.config.settings.view.form.inherit.user.limit</field>
             <field name="model">res.config.settings</field>
             <field name="inherit_id" ref="base.res_config_settings_view_form"/>
             <field name="arch" type="xml">
-                <!-- CAMBIO AQUÍ: Apuntar al div con la clase 'o_form_sheet_bg' para una inserción robusta -->
-                <xpath expr="//div[hasclass('o_form_sheet_bg')]" position="inside">
+                <xpath expr="//form" position="inside">
                     <div class="app_settings_block" data-string="Límite de Usuarios" string="Límite de Usuarios" data-key="user_limit">
                         <h2>Configuración de Usuarios</h2>
                         <div class="row mt16 o_settings_container">
