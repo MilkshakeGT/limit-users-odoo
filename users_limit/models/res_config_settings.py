@@ -59,6 +59,12 @@ class ResConfigSettings(models.TransientModel):
             _logger.info(f"Usuario tiene grupo super administrador ('user_limit.group_user_limit_super_admin'): {has_super_admin_group}")
 
             if not has_super_admin_group:
+                # --- LÍNEA DE DEPURACIÓN CRÍTICA (dentro del IF) ---
+                # Si ves este error, significa que Odoo cree que el usuario NO tiene el grupo.
+                # ¡Esto es lo que esperamos para los usuarios sin permisos!
+                raise UserError("¡¡¡DEPURACIÓN: Odoo cree que el usuario NO tiene el grupo de super admin!!!")
+                # --- FIN LÍNEA DE DEPURACIÓN ---
+
                 log_to_file("El usuario NO tiene el grupo de super administrador. Intentando eliminar el bloque 'user_limit'.")
                 _logger.info("El usuario NO tiene el grupo de super administrador. Intentando eliminar el bloque 'user_limit'.")
                 
