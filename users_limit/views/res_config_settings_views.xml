@@ -5,7 +5,8 @@
         <record id="res_config_settings_view_form_inherit_user_limit" model="ir.ui.view">
             <field name="name">res.config.settings.view.form.inherit.user.limit</field>
             <field name="model">res.config.settings</field>
-            <field name="inherit_id">base.res_config_settings_view_form</field>
+            <!-- CAMBIO AQUÍ: Usar ref para el inherit_id -->
+            <field name="inherit_id" ref="base.res_config_settings_view_form"/>
             <field name="arch" type="xml">
                 <!-- Buscar el elemento div con la clase 'settings' y añadir nuestro campo después de él -->
                 <xpath expr="//div[hasclass('settings')]" position="inside">
