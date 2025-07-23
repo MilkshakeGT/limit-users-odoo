@@ -9,7 +9,7 @@ class ResUsers(models.Model):
     # --- LÍMITE DE USUARIOS HARDCODEADO ---
     # Define aquí el número máximo de usuarios internos activos permitidos.
     # Solo puedes cambiar este valor modificando el código.
-    HARDCODED_USER_LIMIT = 3 # <--- ¡CAMBIA ESTE VALOR AL LÍMITE DESEADO!
+    HARDCODED_USER_LIMIT = 2 # <--- ¡CAMBIA ESTE VALOR AL LÍMITE DESEADO!
     # --- FIN LÍMITE DE USUARIOS HARDCODEADO ---
 
     def _get_active_internal_users_count(self):
