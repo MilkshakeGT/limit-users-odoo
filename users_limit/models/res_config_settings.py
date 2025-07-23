@@ -26,7 +26,8 @@ class ResConfigSettings(models.TransientModel):
         inverse='_inverse_user_limit', # Necesario para campos de solo lectura con compute
     )
 
-    @api.depends() # No depende de ningún campo en particular, se recalcula al cargar la vista
+    # Añadimos una dependencia para forzar la recomputación
+    @api.depends('company_id') # Aseguramos que se compute al cargar o cambiar la compañía
     def _compute_user_limit_from_hardcode(self):
         """
         Calcula el valor del límite de usuarios activos desde el valor hardcodeado en res.users.
@@ -34,10 +35,6 @@ class ResConfigSettings(models.TransientModel):
         # Obtenemos el valor hardcodeado directamente de la clase ResUsers
         hardcoded_limit = self.env['res.users'].HARDCODED_USER_LIMIT
         
-        # --- LÍNEA DE DEPURACIÓN CRÍTICA (ELIMINADA) ---
-        # raise UserError(f"¡DEPURACIÓN: El límite hardcodeado obtenido es: {hardcoded_limit}!")
-        # --- FIN LÍNEA DE DEPURACIÓN ---
-
         for rec in self:
             rec.user_limit = hardcoded_limit
 
