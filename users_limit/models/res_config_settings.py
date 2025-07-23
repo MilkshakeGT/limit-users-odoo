@@ -9,31 +9,41 @@ print("DEBUG EXTREMO: Archivo res_config_settings.py de user_limit cargado y pro
 import logging
 from odoo import fields, models, api, _
 from odoo.exceptions import UserError
-# Ya no necesitamos lxml.etree, datetime, os si no manipulamos XML de vistas o hacemos logging directo
-# import lxml.etree as ET
-# import datetime
-# import os
 
 _logger = logging.getLogger(__name__)
-
-# Ya no necesitamos la función de logging a archivo directo
-# def log_to_file(message):
-#     pass # Mantener la definición pero sin implementar si no se usa
 
 class ResConfigSettings(models.TransientModel):
     _name = 'res.config.settings'
     _inherit = 'res.config.settings'
 
     # Campo para definir el límite de usuarios activos
-    # Ahora es de solo lectura y su valor es establecido por el código.
     user_limit = fields.Integer(
         string="Límite de Usuarios Activos",
-        config_parameter='user_limit.max_active_users', # Odoo leerá el valor de ir.config_parameter
+        # Eliminamos config_parameter ya que el valor será calculado
         help="Establece el número máximo de usuarios activos permitidos en esta instancia de Odoo. Este valor es solo de lectura.",
-        readonly=True, # <--- ¡CAMBIO CLAVE! Campo de solo lectura
+        readonly=True, # Campo de solo lectura
+        compute='_compute_user_limit_from_hardcode', # Ahora es un campo calculado
+        inverse='_inverse_user_limit', # Necesario para campos de solo lectura con compute
     )
 
-    # El método fields_view_get y el campo calculado has_user_limit_admin_group
-    # han sido eliminados ya que la visibilidad y editabilidad se controlan directamente
-    # con el atributo 'readonly' del campo.
+    @api.depends() # No depende de ningún campo en particular, se recalcula al cargar la vista
+    def _compute_user_limit_from_hardcode(self):
+        """
+        Calcula el valor del límite de usuarios activos desde el valor hardcodeado en res.users.
+        """
+        # Obtenemos el valor hardcodeado directamente de la clase ResUsers
+        hardcoded_limit = self.env['res.users'].HARDCODED_USER_LIMIT
+        
+        # --- LÍNEA DE DEPURACIÓN CRÍTICA (PARA VER EL VALOR) ---
+        # Esto forzará un error y mostrará el valor de hardcoded_limit.
+        # ¡DEBES ELIMINAR ESTA LÍNEA DESPUÉS DE LA PRUEBA!
+        raise UserError(f"¡DEPURACIÓN: El límite hardcodeado obtenido es: {hardcoded_limit}!")
+        # --- FIN LÍNEA DE DEPURACIÓN ---
 
+        for rec in self:
+            rec.user_limit = hardcoded_limit
+
+    def _inverse_user_limit(self):
+        # Este método es necesario para campos calculados de solo lectura.
+        # No hace nada ya que el campo no es editable.
+        pass
