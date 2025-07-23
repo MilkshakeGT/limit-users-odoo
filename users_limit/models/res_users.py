@@ -6,15 +6,28 @@ from odoo.exceptions import UserError
 class ResUsers(models.Model):
     _inherit = 'res.users'
 
+    # --- LÍMITE DE USUARIOS HARDCODEADO ---
+    # Define aquí el número máximo de usuarios internos activos permitidos.
+    # Solo puedes cambiar este valor modificando el código.
+    HARDCODED_USER_LIMIT = 5 # <--- ¡CAMBIA ESTE VALOR AL LÍMITE DESEADO!
+    # --- FIN LÍMITE DE USUARIOS HARDCODEADO ---
+
     def _get_active_internal_users_count(self):
         """
         Retorna el número de usuarios activos que no son de portal ni OdooBot.
         """
+        # Asegurarse de que 'base.group_portal' y 'base.user_root' existan antes de usarlos
+        group_portal_id = self.env.ref('base.group_portal', raise_if_not_found=False)
+        user_root_id = self.env.ref('base.user_root', raise_if_not_found=False)
+
         domain = [
             ('active', '=', True),
-            ('id', '!=', self.env.ref('base.user_root').id), # Excluir OdooBot
-            ('groups_id', 'not in', self.env.ref('base.group_portal').id) # Excluir usuarios de portal
         ]
+        if user_root_id:
+            domain.append(('id', '!=', user_root_id.id)) # Excluir OdooBot
+        if group_portal_id:
+            domain.append(('groups_id', 'not in', group_portal_id.id)) # Excluir usuarios de portal
+        
         return self.env['res.users'].search_count(domain)
 
     @api.model_create_multi
@@ -23,39 +36,35 @@ class ResUsers(models.Model):
         Sobrescribe el método create para validar el límite de usuarios activos
         antes de permitir la creación de nuevos usuarios.
         """
-        # Obtenemos el límite de usuarios activos desde la configuración
-        user_limit = int(self.env['ir.config_parameter'].sudo().get_param('user_limit.max_active_users', 0))
+        # Obtenemos el límite de usuarios directamente del valor hardcodeado
+        user_limit = self.HARDCODED_USER_LIMIT
 
         if user_limit > 0: # Solo aplicamos el límite si es mayor que 0
             # Contamos los usuarios activos e internos actualmente.
             active_internal_users_count = self._get_active_internal_users_count()
 
-            # Consideramos el número de usuarios que se están creando en esta operación
-            # y que no sean usuarios de portal. Asumimos que los nuevos usuarios serán internos a menos que se especifique.
-            # Aquí la suposición es que create() se usa para usuarios internos.
-            # Si se crearan usuarios de portal con este create, la lógica debería ser más compleja para discernirlos.
-            # Por simplicidad, el conteo de "nuevos" usuarios que afectaría el límite se considera aquí como 1 por operación
-            # si es un usuario "interno".
-            # Para una creación multi, hay que ser cuidadosos. Asumiremos que vals_list son para usuarios internos.
-            users_to_create_count = 0
-            for vals in vals_list:
-                # Si 'active' no está en vals o es True, y no es un usuario de portal explícitamente
-                if vals.get('active', True) and (not vals.get('groups_id') or self.env.ref('base.group_portal').id not in vals.get('groups_id')[0][2]):
-                     users_to_create_count += 1
-            
-            # Si el nuevo usuario a crear no está explícitamente como portal, lo contamos
-            # Si el nuevo usuario a crear NO es portal, lo contamos.
-            # La forma más segura para el create es verificar el vals para evitar contar portal users:
+            # Contamos los nuevos usuarios que se intentan crear que serían internos
             new_internal_users_count = 0
             for vals in vals_list:
-                # Asumimos que si no se especifican grupos, es un usuario interno por defecto.
-                # O si se especifican, no incluyen el grupo de portal.
-                if vals.get('active', True) and (not vals.get('groups_id') or not any(group[1] == self.env.ref('base.group_portal').id for group in vals.get('groups_id') if isinstance(group, tuple) and group[0] == 6)):
-                     new_internal_users_count += 1
+                if vals.get('active', True):
+                    is_portal_user_in_vals = False
+                    if 'groups_id' in vals:
+                        for group_op in vals['groups_id']:
+                            if isinstance(group_op, tuple) and group_op[0] == 6: # Comando (6, 0, [ids]) para reemplazar grupos
+                                if self.env.ref('base.group_portal', raise_if_not_found=False) and self.env.ref('base.group_portal').id in group_op[2]:
+                                    is_portal_user_in_vals = True
+                                    break
+                            elif isinstance(group_op, tuple) and group_op[0] == 4: # Comando (4, id) para añadir grupo
+                                if self.env.ref('base.group_portal', raise_if_not_found=False) and group_op[1] == self.env.ref('base.group_portal').id:
+                                    is_portal_user_in_vals = True
+                                    break
+                    
+                    if not is_portal_user_in_vals:
+                        new_internal_users_count += 1
 
             if (active_internal_users_count + new_internal_users_count) > user_limit:
                 raise UserError(_(
-                    "¡Límite de Usuarios Excedido!\n"
+                    "¡Límite de Usuarios Excedido!\\n"
                     "No se pueden crear más usuarios activos internos. El límite configurado es de %s usuarios activos. "
                     "Actualmente hay %s usuarios activos internos."
                 ) % (user_limit, active_internal_users_count))
@@ -68,51 +77,51 @@ class ResUsers(models.Model):
         Sobrescribe el método write para validar el límite de usuarios activos
         cuando se intenta activar un usuario inactivo o modificar uno existente.
         """
-        # Obtenemos el límite de usuarios activos desde la configuración
-        user_limit = int(self.env['ir.config_parameter'].sudo().get_param('user_limit.max_active_users', 0))
+        # Obtenemos el límite de usuarios directamente del valor hardcodeado
+        user_limit = self.HARDCODED_USER_LIMIT
 
         # Solo aplicamos la validación si se está intentando activar el usuario
         # y si el límite es mayor que 0
         if user_limit > 0 and 'active' in vals and vals['active'] == True:
-            # Filtramos los usuarios que realmente van a ser activados por esta operación
-            # y que no son de portal ni OdooBot
-            users_to_activate = self.filtered(lambda u: not u.active and \
-                                              u != self.env.ref('base.user_root') and \
-                                              self.env.ref('base.group_portal').id not in u.groups_id.ids)
-
             # Contamos los usuarios activos e internos existentes, excluyendo los que estamos a punto de activar
             # para evitar contarlos dos veces.
-            active_internal_users_before_op = self._get_active_internal_users_count()
-
-            # La lógica aquí debe ser: ¿cuántos usuarios *internos* activos tendremos *después* de esta operación?
-            # Si un usuario se activa, cuenta. Si un usuario ya estaba activo y es interno, cuenta.
-            # Lo más fácil es contar el total de usuarios activos internos DESPUÉS de aplicar la potencial activación,
-            # pero sin el commit a la BD todavía.
-
-            # Una forma más robusta es calcular el total de usuarios internos activos si la operación se completara:
-            # Usuarios que ya están activos y no son parte de 'self'
-            existing_active_internal_users = self.env['res.users'].search([
+            
+            # Contar usuarios internos activos que NO están en 'self'
+            domain_existing_active = [
                 ('active', '=', True),
-                ('id', '!=', self.env.ref('base.user_root').id),
-                ('groups_id', 'not in', self.env.ref('base.group_portal').id),
-                ('id', 'not in', self.ids) # Excluye los usuarios en el 'self' actual
-            ])
+                ('id', 'not in', self.ids), # Excluir los usuarios en el 'self' actual
+            ]
+            user_root_id = self.env.ref('base.user_root', raise_if_not_found=False)
+            group_portal_id = self.env.ref('base.group_portal', raise_if_not_found=False)
+
+            if user_root_id:
+                domain_existing_active.append(('id', '!=', user_root_id.id))
+            if group_portal_id:
+                domain_existing_active.append(('groups_id', 'not in', group_portal_id.id))
+
+            existing_active_internal_users_count = self.env['res.users'].search_count(domain_existing_active)
             
             # Sumamos los usuarios que están en 'self' y que, después del write, serán activos e internos.
-            count_from_self = 0
+            # Esto incluye a los que se están activando y a los que ya estaban activos e internos en 'self'.
+            count_from_self_after_op = 0
             for user in self:
-                # Si el usuario ya estaba activo e interno, o si se va a activar y no es portal/OdooBot
-                is_internal = (user != self.env.ref('base.user_root') and self.env.ref('base.group_portal').id not in user.groups_id.ids)
-                if is_internal and (user.active or ('active' in vals and vals['active'] == True)):
-                    count_from_self += 1
+                is_internal_after_op = (user_root_id and user.id != user_root_id.id) and \
+                                       (group_portal_id and group_portal_id.id not in user.groups_id.ids)
+                
+                # Si el usuario es interno y será activo después de esta operación
+                if is_internal_after_op and (user.active or ('active' in vals and vals['active'] == True)):
+                    count_from_self_after_op += 1
 
-            total_active_internal_users_after_op = len(existing_active_internal_users) + count_from_self
+            total_active_internal_users_after_op = existing_active_internal_users_count + count_from_self_after_op
 
             if total_active_internal_users_after_op > user_limit:
                 raise UserError(_(
-                    "¡Límite de Usuarios Excedido!\n"
+                    "¡Límite de Usuarios Excedido!\\n"
                     "No se pueden activar más usuarios internos. El límite configurado es de %s usuarios activos. "
                     "Actualmente hay %s usuarios activos internos."
-                ) % (user_limit, active_internal_users_before_op)) # Mostramos el conteo actual antes de la operación
+                ) % (user_limit, existing_active_internal_users_count + len(self.filtered(lambda u: not u.active and \
+                                              u != self.env.ref('base.user_root', raise_if_not_found=False) and \
+                                              (self.env.ref('base.group_portal', raise_if_not_found=False) and self.env.ref('base.group_portal').id not in u.groups_id.ids)))))
 
         return super().write(vals)
+
