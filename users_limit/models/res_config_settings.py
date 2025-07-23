@@ -34,10 +34,8 @@ class ResConfigSettings(models.TransientModel):
         # Obtenemos el valor hardcodeado directamente de la clase ResUsers
         hardcoded_limit = self.env['res.users'].HARDCODED_USER_LIMIT
         
-        # --- LÍNEA DE DEPURACIÓN CRÍTICA (PARA VER EL VALOR) ---
-        # Esto forzará un error y mostrará el valor de hardcoded_limit.
-        # ¡DEBES ELIMINAR ESTA LÍNEA DESPUÉS DE LA PRUEBA!
-        raise UserError(f"¡DEPURACIÓN: El límite hardcodeado obtenido es: {hardcoded_limit}!")
+        # --- LÍNEA DE DEPURACIÓN CRÍTICA (ELIMINADA) ---
+        # raise UserError(f"¡DEPURACIÓN: El límite hardcodeado obtenido es: {hardcoded_limit}!")
         # --- FIN LÍNEA DE DEPURACIÓN ---
 
         for rec in self:
